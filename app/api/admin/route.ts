@@ -86,14 +86,14 @@ export async function POST(req: NextRequest) {
       import('@/models/Transaction').then((m) => m.default),
     ])
     const results: Record<string, string> = {}
-    for (const mock of [kiranaData, tuitionData, tailorData] as Array<{ user: { phone: string; name: string; businessName: string; businessType: 'kirana'|'tuition'|'tailor'; language: 'en'|'hi'|'mr' }; udhaar: Array<{ customerName: string; amount: number; amountPaid: number; note: string; status: string; daysAgo: number }>; bills: Array<{ vendorName: string; items: Array<{ name: string; quantity: number; unit: string; price: number }>; totalAmount: number; status: string; daysAgo: number }>; inventory: Array<{ itemName: string; quantity: number; unit: string; reorderThreshold: number }>; transactions: Array<{ type: 'sale'|'expense'; amount: number; description: string; category: string; paymentMode: 'cash'|'upi'|'credit'; daysAgo: number }> }>) {
+    for (const mock of [kiranaData, tuitionData, tailorData] as Array<{ user: { phone: string; name: string; businessName: string; businessType: 'kirana'|'tuition'|'tailor'; language: 'en'|'hi'|'mr' }; udhaar: Array<{ customerName: string; amount: number; amountPaid: number; note: string; status: 'pending' | 'partial' | 'paid'; daysAgo: number }>; bills: Array<{ vendorName: string; items: Array<{ name: string; quantity: number; unit: string; price: number }>; totalAmount: number; status: 'paid' | 'unpaid'; daysAgo: number }>; inventory: Array<{ itemName: string; quantity: number; unit: string; reorderThreshold: number }>; transactions: Array<{ type: 'sale'|'expense'; amount: number; description: string; category: string; paymentMode: 'cash'|'upi'|'credit'; daysAgo: number }> }>) {
       let user = await User.findOne({ phone: mock.user.phone })
       if (!user) user = await User.create(mock.user)
       const userId = user._id.toString()
       await Promise.all([Udhaar.deleteMany({ userId }), Bill.deleteMany({ userId }), Inventory.deleteMany({ userId }), Transaction.deleteMany({ userId })])
       const now = Date.now()
-      for (const u of mock.udhaar) await Udhaar.create({ userId, customerName: u.customerName, amount: u.amount, amountPaid: u.amountPaid, note: u.note, status: u.status, createdAt: new Date(now - u.daysAgo * 86400000) })
-      for (const b of mock.bills) await Bill.create({ userId, vendorName: b.vendorName, items: b.items, totalAmount: b.totalAmount, status: b.status, billDate: new Date(now - b.daysAgo * 86400000), createdAt: new Date(now - b.daysAgo * 86400000) })
+      for (const u of mock.udhaar) await Udhaar.create({ userId, customerName: u.customerName, amount: u.amount, amountPaid: u.amountPaid, note: u.note, status: u.status as 'pending' | 'partial' | 'paid', createdAt: new Date(now - u.daysAgo * 86400000) })
+      for (const b of mock.bills) await Bill.create({ userId, vendorName: b.vendorName, items: b.items, totalAmount: b.totalAmount, status: b.status as 'paid' | 'unpaid', billDate: new Date(now - b.daysAgo * 86400000), createdAt: new Date(now - b.daysAgo * 86400000) })
       for (const i of mock.inventory) await Inventory.create({ userId, ...i })
       for (const t of mock.transactions) await Transaction.create({ userId, type: t.type, amount: t.amount, description: t.description, category: t.category, paymentMode: t.paymentMode, createdAt: new Date(now - t.daysAgo * 86400000) })
       results[mock.user.phone] = 'seeded'
