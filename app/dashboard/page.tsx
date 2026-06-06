@@ -21,7 +21,7 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
-  const { user, language } = useApp()
+  const { user, hydrated, language } = useApp()
   const router = useRouter()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -31,11 +31,10 @@ export default function DashboardPage() {
     if (!user) return
     setLoading(true)
     try {
-      const [udhaarRes, billsRes, invRes, txRes] = await Promise.all([
+      const [udhaarRes, billsRes, invRes] = await Promise.all([
         fetch(`/api/udhaar?userId=${user.id}`),
         fetch(`/api/bills?userId=${user.id}`),
         fetch(`/api/inventory?userId=${user.id}`),
-        fetch(`/api/admin?action=overview`),
       ])
 
       const [udhaarData, billsData, invData] = await Promise.all([
@@ -93,9 +92,10 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    if (!hydrated) return
     if (!user) { router.push('/'); return }
     loadDashboard()
-  }, [user, router, loadDashboard])
+  }, [user, hydrated, router, loadDashboard])
 
   function getGreeting() {
     const h = new Date().getHours()

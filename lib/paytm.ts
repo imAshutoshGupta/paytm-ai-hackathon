@@ -1,5 +1,8 @@
 import OpenAI from 'openai'
 
+const TEXT_MODEL = 'llama-3.3-70b-versatile'
+const VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+
 function isPlaceholder() {
   const key = process.env.PAYTM_INFERENCE_KEY
   return !key || key === 'placeholder'
@@ -116,7 +119,7 @@ export async function generateText(
   const msgs: OpenAI.Chat.ChatCompletionMessageParam[] = []
   if (systemPrompt) msgs.push({ role: 'system', content: `${systemPrompt}\n${langInstruction}` })
   msgs.push({ role: 'user', content: prompt })
-  const res = await getClient().chat.completions.create({ model: 'Claude Opus 4.5', messages: msgs, temperature: 0.7, max_tokens: 1024 })
+  const res = await getClient().chat.completions.create({ model: TEXT_MODEL, messages: msgs, temperature: 0.7, max_tokens: 1024 })
   return res.choices[0]?.message?.content ?? ''
 }
 
@@ -134,7 +137,7 @@ export async function analyzeImage(base64Image: string, prompt: string): Promise
     })
   }
   const res = await getClient().chat.completions.create({
-    model: 'Claude Opus 4.5',
+    model: VISION_MODEL,
     messages: [{
       role: 'user',
       content: [
@@ -168,7 +171,7 @@ Rules: respond in ${langStr}. Use ₹ symbol. Be concise and friendly.`
     { role: 'system', content: systemPrompt },
     ...messages.map((m) => ({ role: m.role, content: m.content })),
   ]
-  const res = await getClient().chat.completions.create({ model: 'Claude Opus 4.5', messages: oaiMessages, temperature: 0.7, max_tokens: 1024 })
+  const res = await getClient().chat.completions.create({ model: TEXT_MODEL, messages: oaiMessages, temperature: 0.7, max_tokens: 1024 })
   return res.choices[0]?.message?.content ?? ''
 }
 

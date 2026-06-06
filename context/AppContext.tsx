@@ -14,6 +14,7 @@ export interface UserProfile {
 
 interface AppContextValue {
   user: UserProfile | null
+  hydrated: boolean
   language: Language
   setLanguage: (lang: Language) => void
   setUser: (user: UserProfile | null) => void
@@ -22,6 +23,7 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue>({
   user: null,
+  hydrated: false,
   language: 'en',
   setLanguage: () => {},
   setUser: () => {},
@@ -31,6 +33,7 @@ const AppContext = createContext<AppContextValue>({
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<UserProfile | null>(null)
   const [language, setLanguageState] = useState<Language>('en')
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
     try {
@@ -43,6 +46,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const storedLang = localStorage.getItem('hisaab_lang') as Language | null
       if (storedLang) setLanguageState(storedLang)
     } catch {}
+    setHydrated(true)
   }, [])
 
   function setUser(u: UserProfile | null) {
@@ -69,7 +73,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ user, language, setLanguage, setUser, logout }}>
+    <AppContext.Provider value={{ user, hydrated, language, setLanguage, setUser, logout }}>
       {children}
     </AppContext.Provider>
   )

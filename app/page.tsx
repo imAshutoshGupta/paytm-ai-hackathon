@@ -68,9 +68,15 @@ export default function LoginPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'verify-otp', phone, otp }),
     })
+    const data = await res.json()
     setLoading(false)
-    if (res.ok) setStep('profile')
-    else setError('Invalid OTP. Try 1234')
+    if (!res.ok) { setError('Invalid OTP. Try 1234'); return }
+    if (data.user) {
+      setUser(data.user)
+      router.push('/dashboard')
+    } else {
+      setStep('profile')
+    }
   }
 
   async function register() {

@@ -13,7 +13,16 @@ export async function POST(req: NextRequest) {
 
   if (action === 'verify-otp') {
     if (otp !== '1234') return NextResponse.json({ error: 'Invalid OTP' }, { status: 401 })
-    return NextResponse.json({ success: true })
+
+    if (isMockMode()) {
+      const user = Users.findOne({ phone })
+      return NextResponse.json({ success: true, user: user ? { id: user._id, phone: user.phone, name: user.name, businessName: user.businessName, businessType: user.businessType, language: user.language } : null })
+    }
+
+    await connectDB()
+    const User = (await import('@/models/User')).default
+    const user = await User.findOne({ phone })
+    return NextResponse.json({ success: true, user: user ? { id: user._id.toString(), phone: user.phone, name: user.name, businessName: user.businessName, businessType: user.businessType, language: user.language } : null })
   }
 
   if (action === 'register') {
