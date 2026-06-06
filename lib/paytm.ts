@@ -7,6 +7,8 @@ import OpenAI from 'openai'
 // Model is configurable via env so it can be swapped without code changes.
 const TEXT_MODEL = process.env.PAYTM_INFERENCE_MODEL || 'llama-3.3-70b-versatile'
 
+export function getInferenceModel() { return TEXT_MODEL }
+
 function isPlaceholder() {
   const key = process.env.PAYTM_INFERENCE_KEY
   return !key || key === 'placeholder'
@@ -17,6 +19,81 @@ function getClient() {
     apiKey: process.env.PAYTM_INFERENCE_KEY!,
     baseURL: process.env.PAYTM_INFERENCE_URL || 'https://api.inference.paytm.com/v1',
   })
+}
+
+// ─── AI churn scoring ─────────────────────────────────────────────────────────
+
+export interface ChurnFeature {
+  id: string
+  visits: number
+  recencyDays: number
+  avgGapDays: number
+  avgSpend: number
+}
+export interface ChurnVerdict {
+  id: string
+  churnPct: number
+  reason: string
+}
+
+const CHURN_BATCH = 12
+
+function extractJsonArray(text: string): unknown[] | null {
+  const m = text.match(/\[[\s\S]*\]/)
+  if (!m) return null
+  try { return JSON.parse(m[0]) } catch { return null }
+}
+
+async function scoreChunk(features: ChurnFeature[], businessType: string): Promise<ChurnVerdict[]> {
+  const system = `You are a customer-retention analyst for an Indian ${businessType} business that accepts payments via Paytm QR.
+For each customer, estimate churn risk as a probability 0-100, judged mainly on whether they have broken their OWN visit rhythm:
+- recencyDays much larger than their avgGapDays => high risk (they are overdue for a visit)
+- still within their usual gap => low risk, even if they visit rarely
+- more past visits (loyalty) slightly lowers risk
+Return ONLY a compact JSON array, one object per customer, no prose:
+[{"id":"<id>","churnPct":<0-100>,"reason":"<max 12 words, specific to this customer>"}]`
+
+  const user = `Customers:\n${JSON.stringify(features)}`
+
+  const res = await getClient().chat.completions.create({
+    model: TEXT_MODEL,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+    temperature: 0.2,
+    max_tokens: 2048,
+  })
+  const arr = extractJsonArray(res.choices[0]?.message?.content ?? '')
+  if (!arr) throw new Error('Could not parse churn JSON')
+  return arr
+    .map((o) => {
+      const v = o as Record<string, unknown>
+      const pct = Math.max(0, Math.min(100, Math.round(Number(v.churnPct))))
+      if (!v.id || Number.isNaN(pct)) return null
+      return { id: String(v.id), churnPct: pct, reason: String(v.reason ?? '').slice(0, 120) }
+    })
+    .filter((x): x is ChurnVerdict => x !== null)
+}
+
+/**
+ * AI-scores all customers via Paytm Inference. Returns a verdict per customer id.
+ * Returns null when no key is configured (caller falls back to the heuristic).
+ * Any individual batch that fails is skipped (those customers fall back too).
+ */
+export async function scoreChurnAI(
+  features: ChurnFeature[],
+  businessType: string,
+): Promise<ChurnVerdict[] | null> {
+  if (isPlaceholder()) return null
+
+  const chunks: ChurnFeature[][] = []
+  for (let i = 0; i < features.length; i += CHURN_BATCH) chunks.push(features.slice(i, i + CHURN_BATCH))
+
+  const results = await Promise.all(
+    chunks.map((c) => scoreChunk(c, businessType).catch(() => [] as ChurnVerdict[])),
+  )
+  return results.flat()
 }
 
 export type WinBackLanguage = 'en' | 'hi' | 'hinglish'

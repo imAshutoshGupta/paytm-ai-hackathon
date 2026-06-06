@@ -14,36 +14,43 @@ function timeAgo(ts: number): string {
 }
 
 export default function ChurnEngineBanner() {
-  const { hasRun, lastRun, running, runEngine, metrics } = useChurn()
+  const { hasRun, lastRun, running, runEngine, metrics, engine, engineInfo } = useChurn()
   const toast = useToast()
 
   async function run() {
     const flagged = await runEngine()
-    toast.show(`Engine complete — ${flagged} customers need attention`)
+    toast.show(`AI analysed ${metrics.totalCustomers} customers — ${flagged} need attention`)
   }
+
+  const aiBadge = engine !== 'heuristic'
 
   return (
     <div className="card flex flex-col gap-3 border-l-2 border-l-brand p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-brand-tint text-brand-dark">
-          <Cpu size={18} />
+          {running ? <Loader2 size={18} className="animate-spin" /> : <Cpu size={18} />}
         </span>
         <div>
-          <div className="flex items-center gap-2 font-semibold text-navy">
-            AI Engine
+          <div className="flex flex-wrap items-center gap-2 font-semibold text-navy">
+            AI Churn Engine
             <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-2 py-0.5 text-2xs font-medium text-muted">
-              <Sparkles size={11} className="text-brand" /> Sarvam AI × Paytm Inference
+              <Sparkles size={11} className="text-brand" />
+              {aiBadge ? 'Powered by Paytm Inference' : 'Heuristic scoring'}
             </span>
           </div>
           <p className="mt-0.5 text-xs text-muted">
-            {hasRun && lastRun
-              ? `Last run ${timeAgo(lastRun)} · ${metrics.atRisk} customers flagged at risk`
-              : 'Not run yet — analyse customer payment patterns to find who is slipping away'}
+            {running
+              ? `Sending ${metrics.totalCustomers} customers to the LLM for scoring…`
+              : hasRun && lastRun
+              ? engineInfo
+                ? <>Scored <span className="font-medium text-slate">{engineInfo.analysed}</span> customers via <span className="font-medium text-slate">{engineInfo.model}</span> in {(engineInfo.durationMs / 1000).toFixed(1)}s · {timeAgo(lastRun)}</>
+                : `Last run ${timeAgo(lastRun)} · ${metrics.atRisk} flagged at risk`
+              : 'Not run yet — the AI reads each customer’s visit pattern to predict who is slipping away'}
           </p>
         </div>
       </div>
       <button onClick={run} disabled={running} className="btn btn-md btn-blue flex-shrink-0">
-        {running ? <><Loader2 size={16} className="animate-spin" /> Scoring…</> : <><Cpu size={16} /> Run AI Engine</>}
+        {running ? <><Loader2 size={16} className="animate-spin" /> Analysing…</> : <><Cpu size={16} /> Run AI Engine</>}
       </button>
     </div>
   )

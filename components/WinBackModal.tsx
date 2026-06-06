@@ -128,6 +128,14 @@ export default function WinBackModal({
           </div>
         </div>
 
+        {/* AI insight */}
+        {customer.reason && (
+          <div className="flex items-start gap-2 border-b border-line bg-amber-soft/50 px-5 py-2.5">
+            <Sparkles size={13} className="mt-0.5 flex-shrink-0 text-amber-dark" />
+            <p className="text-xs text-slate"><span className="font-semibold text-navy">Why flagged:</span> {customer.reason}</p>
+          </div>
+        )}
+
         {/* Body */}
         <div className="space-y-3 p-5">
           {/* Language toggle */}

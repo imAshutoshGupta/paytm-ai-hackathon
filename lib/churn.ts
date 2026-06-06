@@ -34,6 +34,8 @@ export interface ScoredCustomer extends CustomerInput {
   frequencyScore: number
   churnPct: number
   risk: RiskLevel
+  /** AI-generated explanation for the score (empty when scored by the heuristic fallback). */
+  reason?: string
 }
 
 const DAY = 86400000

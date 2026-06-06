@@ -1,7 +1,7 @@
 'use client'
 
 import { ScoredCustomer, maskName, maskPhone, lastVisitedLabel } from '@/lib/churn'
-import { Send, Check } from 'lucide-react'
+import { Send, Check, Sparkles } from 'lucide-react'
 import clsx from 'clsx'
 
 const AVATAR_TONES = [
@@ -25,7 +25,7 @@ function ChurnCell({ c, hasRun }: { c: ScoredCustomer; hasRun: boolean }) {
   const tone = c.churnPct >= 70 ? 'bg-danger' : c.churnPct >= 45 ? 'bg-amber' : 'bg-success'
   const text = c.churnPct >= 70 ? 'text-danger' : c.churnPct >= 45 ? 'text-amber-dark' : 'text-success'
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex items-center justify-end gap-2" title={c.reason || undefined}>
       <div className="h-1.5 w-16 overflow-hidden rounded-full bg-canvas">
         <div className={clsx('h-full rounded-full', tone)} style={{ width: `${c.churnPct}%` }} />
       </div>
@@ -61,7 +61,7 @@ export default function CustomerTable({
   return (
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+        <table className="w-full min-w-[920px] border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-line bg-canvas/70 text-2xs uppercase tracking-wider text-muted">
               <th className="px-4 py-3 font-semibold">Customer</th>
@@ -69,6 +69,9 @@ export default function CustomerTable({
               <th className="px-4 py-3 text-right font-semibold">Last Paid</th>
               <th className="px-4 py-3 font-semibold">Last Visited</th>
               <th className="px-4 py-3 text-right font-semibold">Churn Risk</th>
+              <th className="px-4 py-3 font-semibold">
+                <span className="inline-flex items-center gap-1"><Sparkles size={11} className="text-brand" /> AI Insight</span>
+              </th>
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 text-right font-semibold">Action</th>
             </tr>
@@ -95,6 +98,11 @@ export default function CustomerTable({
                   <td className="px-4 py-2.5 text-right tabular-nums font-medium text-navy">₹{c.lastTransactionAmount.toLocaleString('en-IN')}</td>
                   <td className="px-4 py-2.5 text-slate">{lastVisitedLabel(c.recencyDays)}</td>
                   <td className="px-4 py-2.5"><ChurnCell c={c} hasRun={hasRun} /></td>
+                  <td className="max-w-[220px] px-4 py-2.5">
+                    {hasRun && c.reason
+                      ? <span className="text-xs italic text-slate">“{c.reason}”</span>
+                      : <span className="text-2xs text-muted">{hasRun ? '—' : 'Run engine'}</span>}
+                  </td>
                   <td className="px-4 py-2.5"><StatusPill c={c} sent={isSent} hasRun={hasRun} /></td>
                   <td className="px-4 py-2.5 text-right">
                     {isSent ? (
