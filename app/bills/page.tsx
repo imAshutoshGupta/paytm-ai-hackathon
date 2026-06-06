@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useApp } from '@/context/AppContext'
 import { t, formatAmount } from '@/lib/i18n'
 import BillCard from '@/components/BillCard'
-import { Upload, Search, Loader2, SendHorizonal } from 'lucide-react'
+import { Upload, Search, Loader2, SendHorizontal } from 'lucide-react'
 
 interface Bill {
   _id: string
@@ -129,7 +129,7 @@ export default function BillsPage() {
               className="pl-8" />
           </div>
           <button onClick={askQuery} disabled={querying || !query.trim()} className="btn btn-md btn-primary">
-            {querying ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <SendHorizonal size={16} strokeWidth={1.75} />}
+            {querying ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <SendHorizontal size={16} strokeWidth={1.75} />}
           </button>
         </div>
         {answer && (

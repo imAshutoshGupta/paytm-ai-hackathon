@@ -6,7 +6,7 @@ import { useApp } from '@/context/AppContext'
 import { t } from '@/lib/i18n'
 import ChatBubble from '@/components/ChatBubble'
 import MicButton from '@/components/MicButton'
-import { SendHorizonal, Loader2 } from 'lucide-react'
+import { SendHorizontal, Loader2 } from 'lucide-react'
 
 interface Message { role: 'user' | 'assistant'; content: string; time: string }
 
@@ -123,7 +123,7 @@ export default function AskPage() {
               className="input flex-1 rounded-full" />
             <button onClick={() => send()} disabled={!input.trim() || loading}
               className="btn btn-md btn-primary flex-shrink-0">
-              <SendHorizonal size={18} strokeWidth={1.75} />
+              <SendHorizontal size={18} strokeWidth={1.75} />
             </button>
           </div>
         </div>
