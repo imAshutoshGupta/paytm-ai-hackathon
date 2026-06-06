@@ -1,0 +1,109 @@
+{
+  "user": {
+    "phone": "9999999002",
+    "name": "Sunita Patil",
+    "businessName": "Patil Tuition Classes",
+    "businessType": "tuition",
+    "language": "mr"
+  },
+  "udhaar": [
+    { "customerName": "Akash Deshmukh", "amount": 1200, "amountPaid": 0, "note": "Maths tuition - May fees", "status": "pending", "daysAgo": 20 },
+    { "customerName": "Priya Kulkarni", "amount": 1500, "amountPaid": 500, "note": "Science + English - April/May", "status": "partial", "daysAgo": 35 },
+    { "customerName": "Rohit Jadhav", "amount": 1000, "amountPaid": 1000, "note": "Maths - May fees", "status": "paid", "daysAgo": 10 },
+    { "customerName": "Sneha Pawar", "amount": 800, "amountPaid": 0, "note": "English batch - May", "status": "pending", "daysAgo": 15 },
+    { "customerName": "Amit Shinde", "amount": 1800, "amountPaid": 900, "note": "Science tuition 2 months", "status": "partial", "daysAgo": 28 },
+    { "customerName": "Pooja Naik", "amount": 1200, "amountPaid": 1200, "note": "SST - May fees", "status": "paid", "daysAgo": 8 },
+    { "customerName": "Rahul More", "amount": 900, "amountPaid": 0, "note": "Hindi + Maths - May", "status": "pending", "daysAgo": 18 },
+    { "customerName": "Neha Bhosale", "amount": 1500, "amountPaid": 0, "note": "Science batch - 2 months pending", "status": "pending", "daysAgo": 40 },
+    { "customerName": "Vishal Gaikwad", "amount": 2000, "amountPaid": 1000, "note": "All subjects combo - May", "status": "partial", "daysAgo": 22 },
+    { "customerName": "Komal Ware", "amount": 800, "amountPaid": 800, "note": "English - May fees", "status": "paid", "daysAgo": 5 },
+    { "customerName": "Suraj Kamble", "amount": 1200, "amountPaid": 0, "note": "Maths - June advance", "status": "pending", "daysAgo": 3 },
+    { "customerName": "Ananya Joshi", "amount": 1000, "amountPaid": 400, "note": "Science + English partial", "status": "partial", "daysAgo": 12 }
+  ],
+  "inventory": [
+    { "itemName": "A4 Paper Ream 500 sheets", "quantity": 3, "unit": "ream", "reorderThreshold": 2 },
+    { "itemName": "Whiteboard Marker Set", "quantity": 8, "unit": "set", "reorderThreshold": 3 },
+    { "itemName": "Geometry Box Set", "quantity": 5, "unit": "pcs", "reorderThreshold": 3 },
+    { "itemName": "Blue Ink Pen 10pk", "quantity": 4, "unit": "box", "reorderThreshold": 3 },
+    { "itemName": "Eraser Pack", "quantity": 25, "unit": "pcs", "reorderThreshold": 10 },
+    { "itemName": "Pencil Box 12pcs", "quantity": 6, "unit": "box", "reorderThreshold": 3 },
+    { "itemName": "Printed Test Papers", "quantity": 80, "unit": "pcs", "reorderThreshold": 30 },
+    { "itemName": "Stapler + Pins", "quantity": 2, "unit": "set", "reorderThreshold": 1 },
+    { "itemName": "Ruler 30cm", "quantity": 10, "unit": "pcs", "reorderThreshold": 5 },
+    { "itemName": "Chart Paper Pack", "quantity": 12, "unit": "pcs", "reorderThreshold": 6 }
+  ],
+  "bills": [
+    {
+      "vendorName": "Rathi Stationery Mart",
+      "items": [
+        { "name": "A4 Paper 500 sheet ream", "quantity": 5, "unit": "ream", "price": 1250 },
+        { "name": "Whiteboard Marker Set", "quantity": 10, "unit": "set", "price": 700 }
+      ],
+      "totalAmount": 1950,
+      "status": "paid",
+      "daysAgo": 20
+    },
+    {
+      "vendorName": "City Book Depot",
+      "items": [
+        { "name": "Blue Pen 10pcs box", "quantity": 5, "unit": "box", "price": 250 },
+        { "name": "Pencil 12pcs box", "quantity": 5, "unit": "box", "price": 300 },
+        { "name": "Geometry Box", "quantity": 8, "unit": "pcs", "price": 640 }
+      ],
+      "totalAmount": 1190,
+      "status": "paid",
+      "daysAgo": 15
+    },
+    {
+      "vendorName": "Print & Copy Center",
+      "items": [
+        { "name": "Question paper printing 200 copies", "quantity": 200, "unit": "pcs", "price": 600 },
+        { "name": "Syllabus handout printing", "quantity": 50, "unit": "pcs", "price": 150 }
+      ],
+      "totalAmount": 750,
+      "status": "unpaid",
+      "daysAgo": 5
+    },
+    {
+      "vendorName": "Rathi Stationery Mart",
+      "items": [
+        { "name": "Chart Paper 20pcs", "quantity": 2, "unit": "pkt", "price": 300 },
+        { "name": "Eraser pack 50pcs", "quantity": 3, "unit": "pkt", "price": 240 }
+      ],
+      "totalAmount": 540,
+      "status": "unpaid",
+      "daysAgo": 2
+    },
+    {
+      "vendorName": "City Book Depot",
+      "items": [
+        { "name": "NCERT textbooks set", "quantity": 3, "unit": "set", "price": 1800 }
+      ],
+      "totalAmount": 1800,
+      "status": "paid",
+      "daysAgo": 30
+    }
+  ],
+  "transactions": [
+    { "type": "sale", "amount": 3600, "description": "Monthly fees collection batch A", "category": "fees", "paymentMode": "cash", "daysAgo": 1 },
+    { "type": "sale", "amount": 2400, "description": "Fees UPI payments", "category": "fees", "paymentMode": "upi", "daysAgo": 1 },
+    { "type": "sale", "amount": 1200, "description": "Individual student fee", "category": "fees", "paymentMode": "cash", "daysAgo": 3 },
+    { "type": "sale", "amount": 1800, "description": "Two students paid fees", "category": "fees", "paymentMode": "upi", "daysAgo": 5 },
+    { "type": "expense", "amount": 750, "description": "Printing test papers", "category": "supplies", "paymentMode": "cash", "daysAgo": 5 },
+    { "type": "sale", "amount": 4000, "description": "April fees batch collection", "category": "fees", "paymentMode": "cash", "daysAgo": 7 },
+    { "type": "sale", "amount": 2000, "description": "Late fee payments", "category": "fees", "paymentMode": "upi", "daysAgo": 8 },
+    { "type": "expense", "amount": 1950, "description": "Stationery from Rathi Mart", "category": "supplies", "paymentMode": "cash", "daysAgo": 10 },
+    { "type": "sale", "amount": 1500, "description": "Special class fee", "category": "fees", "paymentMode": "upi", "daysAgo": 12 },
+    { "type": "sale", "amount": 3000, "description": "Exam preparation batch fee", "category": "fees", "paymentMode": "cash", "daysAgo": 14 },
+    { "type": "expense", "amount": 1190, "description": "Books and pens from City Depot", "category": "supplies", "paymentMode": "cash", "daysAgo": 15 },
+    { "type": "sale", "amount": 2400, "description": "Monthly collection mid-month", "category": "fees", "paymentMode": "upi", "daysAgo": 16 },
+    { "type": "sale", "amount": 1600, "description": "Advance fees for June", "category": "fees", "paymentMode": "cash", "daysAgo": 18 },
+    { "type": "expense", "amount": 500, "description": "Electricity bill", "category": "utilities", "paymentMode": "upi", "daysAgo": 20 },
+    { "type": "sale", "amount": 5200, "description": "Month start fee collection", "category": "fees", "paymentMode": "cash", "daysAgo": 22 },
+    { "type": "sale", "amount": 1800, "description": "Science batch fees", "category": "fees", "paymentMode": "upi", "daysAgo": 24 },
+    { "type": "expense", "amount": 1800, "description": "NCERT textbooks purchase", "category": "books", "paymentMode": "cash", "daysAgo": 25 },
+    { "type": "sale", "amount": 2200, "description": "Regular fees paid", "category": "fees", "paymentMode": "cash", "daysAgo": 26 },
+    { "type": "sale", "amount": 1000, "description": "One student paid 2 months", "category": "fees", "paymentMode": "upi", "daysAgo": 28 },
+    { "type": "sale", "amount": 3500, "description": "Batch B monthly collection", "category": "fees", "paymentMode": "cash", "daysAgo": 30 }
+  ]
+}
