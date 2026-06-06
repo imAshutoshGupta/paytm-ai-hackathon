@@ -108,7 +108,14 @@ export default function LoginPage() {
             <button onClick={sendOtp} disabled={loading} className="btn btn-md btn-blue w-full">
               {loading ? 'Sending…' : 'Get OTP'} <ChevronRight size={16} />
             </button>
-            <p className="text-center text-2xs text-muted">Demo: 9999999001 (Kirana) · 9999999002 (Salon)</p>
+            <div className="rounded-lg border border-line bg-canvas p-2.5">
+              <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">Demo logins · OTP 1234</p>
+              <div className="space-y-0.5 text-2xs text-slate">
+                <div className="flex justify-between"><span className="font-mono text-navy">8451903236</span><span className="text-muted">Salon · 110 customers</span></div>
+                <div className="flex justify-between"><span className="font-mono text-navy">9999999001</span><span className="text-muted">Kirana Store</span></div>
+                <div className="flex justify-between"><span className="font-mono text-navy">9999999002</span><span className="text-muted">Salon</span></div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -116,7 +123,7 @@ export default function LoginPage() {
           <div className="space-y-4 animate-fade-in">
             <div>
               <h2 className="text-lg font-semibold text-navy">Verify OTP</h2>
-              <p className="text-xs text-brand-dark">OTP sent to +91 {phone} — use 1234</p>
+              <p className="text-xs text-muted">OTP sent to +91 {phone} — use <span className="rounded bg-brand-tint px-1.5 py-0.5 font-mono font-bold text-brand-dark">1234</span></p>
             </div>
             <input type="text" maxLength={4} value={otp} autoFocus
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}

@@ -20,9 +20,17 @@ export async function connectDB(): Promise<typeof mongoose> {
     global.mongooseCache.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
       dbName: 'churnguard',
+      serverSelectionTimeoutMS: 8000, // fail fast instead of hanging the function
     })
   }
-  global.mongooseCache.conn = await global.mongooseCache.promise
+  try {
+    global.mongooseCache.conn = await global.mongooseCache.promise
+  } catch (err) {
+    // Reset the cached promise so a transient failure doesn't permanently
+    // wedge a warm serverless instance into returning 500s.
+    global.mongooseCache.promise = null
+    throw err
+  }
   return global.mongooseCache.conn
 }
 
