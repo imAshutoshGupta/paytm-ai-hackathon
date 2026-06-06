@@ -110,14 +110,13 @@ export async function generateText(
   if (isPlaceholder()) {
     return `[Demo mode — Paytm AI key not configured. Prompt received: "${prompt.slice(0, 60)}..."]`
   }
-  const client = getClient()
   const langInstruction =
     language === 'hi' ? 'Respond in Hindi (Devanagari script).' :
     language === 'mr' ? 'Respond in Marathi (Devanagari script).' : 'Respond in English.'
   const msgs: OpenAI.Chat.ChatCompletionMessageParam[] = []
   if (systemPrompt) msgs.push({ role: 'system', content: `${systemPrompt}\n${langInstruction}` })
   msgs.push({ role: 'user', content: prompt })
-  const res = await getClient().chat.completions.create({ model: 'gpt-4o', messages: msgs, temperature: 0.7, max_tokens: 1024 })
+  const res = await getClient().chat.completions.create({ model: 'Claude Opus 4.5', messages: msgs, temperature: 0.7, max_tokens: 1024 })
   return res.choices[0]?.message?.content ?? ''
 }
 
@@ -135,7 +134,7 @@ export async function analyzeImage(base64Image: string, prompt: string): Promise
     })
   }
   const res = await getClient().chat.completions.create({
-    model: 'gpt-4o',
+    model: 'Claude Opus 4.5',
     messages: [{
       role: 'user',
       content: [
@@ -169,7 +168,7 @@ Rules: respond in ${langStr}. Use ₹ symbol. Be concise and friendly.`
     { role: 'system', content: systemPrompt },
     ...messages.map((m) => ({ role: m.role, content: m.content })),
   ]
-  const res = await getClient().chat.completions.create({ model: 'gpt-4o', messages: oaiMessages, temperature: 0.7, max_tokens: 1024 })
+  const res = await getClient().chat.completions.create({ model: 'Claude Opus 4.5', messages: oaiMessages, temperature: 0.7, max_tokens: 1024 })
   return res.choices[0]?.message?.content ?? ''
 }
 
