@@ -1,12 +1,16 @@
 import type { Metadata } from 'next'
-import { Inter, Noto_Sans_Devanagari } from 'next/font/google'
+import { DM_Sans, Noto_Sans_Devanagari } from 'next/font/google'
 import './globals.css'
 import { AppProvider } from '@/context/AppContext'
-import Navbar from '@/components/Navbar'
+import { ChurnProvider } from '@/context/ChurnContext'
+import { ToastProvider } from '@/components/Toast'
+import AppShell from '@/components/AppShell'
+import { APP_NAME, APP_TAGLINE } from '@/lib/brand'
 
-const inter = Inter({
+const dmSans = DM_Sans({
   subsets: ['latin'],
-  variable: '--font-inter',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-dm-sans',
   display: 'swap',
 })
 
@@ -18,24 +22,26 @@ const noto = Noto_Sans_Devanagari({
 })
 
 export const metadata: Metadata = {
-  title: 'Hisaab — AI Business Assistant',
+  title: `${APP_NAME} — ${APP_TAGLINE}`,
   description:
-    'AI-powered business assistant for Indian small businesses. Track dues, scan bills, manage stock.',
+    'Predict customer churn from Paytm QR transaction data and win customers back with AI-generated messages.',
 }
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${noto.variable}`}>
-      <body className="bg-background text-ink antialiased">
+    <html lang="en" className={`${dmSans.variable} ${noto.variable}`}>
+      <body className="bg-canvas text-slate antialiased">
         <AppProvider>
-          <Navbar />
-          <main className="page-content min-h-screen">{children}</main>
+          <ToastProvider>
+            <ChurnProvider>
+              <AppShell>{children}</AppShell>
+            </ChurnProvider>
+          </ToastProvider>
         </AppProvider>
       </body>
     </html>

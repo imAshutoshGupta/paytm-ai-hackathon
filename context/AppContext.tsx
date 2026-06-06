@@ -1,79 +1,58 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { Language, BusinessType } from '@/lib/i18n'
 
-export interface UserProfile {
+export type MsgLanguage = 'en' | 'hi' | 'hinglish'
+
+export interface Merchant {
   id: string
   phone: string
   name: string
   businessName: string
-  businessType: BusinessType
-  language: Language
+  businessType: string
 }
 
 interface AppContextValue {
-  user: UserProfile | null
+  merchant: Merchant | null
   hydrated: boolean
-  language: Language
-  setLanguage: (lang: Language) => void
-  setUser: (user: UserProfile | null) => void
+  setMerchant: (m: Merchant | null) => void
   logout: () => void
 }
 
 const AppContext = createContext<AppContextValue>({
-  user: null,
+  merchant: null,
   hydrated: false,
-  language: 'en',
-  setLanguage: () => {},
-  setUser: () => {},
+  setMerchant: () => {},
   logout: () => {},
 })
 
+const STORAGE_KEY = 'cg_merchant'
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUserState] = useState<UserProfile | null>(null)
-  const [language, setLanguageState] = useState<Language>('en')
+  const [merchant, setMerchantState] = useState<Merchant | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('hisaab_user')
-      if (stored) {
-        const parsed = JSON.parse(stored) as UserProfile
-        setUserState(parsed)
-        setLanguageState(parsed.language ?? 'en')
-      }
-      const storedLang = localStorage.getItem('hisaab_lang') as Language | null
-      if (storedLang) setLanguageState(storedLang)
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) setMerchantState(JSON.parse(stored) as Merchant)
     } catch {}
     setHydrated(true)
   }, [])
 
-  function setUser(u: UserProfile | null) {
-    setUserState(u)
-    if (u) {
-      localStorage.setItem('hisaab_user', JSON.stringify(u))
-    } else {
-      localStorage.removeItem('hisaab_user')
-    }
-  }
-
-  function setLanguage(lang: Language) {
-    setLanguageState(lang)
-    localStorage.setItem('hisaab_lang', lang)
-    if (user) {
-      const updated = { ...user, language: lang }
-      setUser(updated)
-    }
+  function setMerchant(m: Merchant | null) {
+    setMerchantState(m)
+    if (m) localStorage.setItem(STORAGE_KEY, JSON.stringify(m))
+    else localStorage.removeItem(STORAGE_KEY)
   }
 
   function logout() {
-    setUserState(null)
-    localStorage.removeItem('hisaab_user')
+    setMerchantState(null)
+    localStorage.removeItem(STORAGE_KEY)
   }
 
   return (
-    <AppContext.Provider value={{ user, hydrated, language, setLanguage, setUser, logout }}>
+    <AppContext.Provider value={{ merchant, hydrated, setMerchant, logout }}>
       {children}
     </AppContext.Provider>
   )

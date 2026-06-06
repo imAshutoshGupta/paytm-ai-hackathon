@@ -19,7 +19,7 @@ export async function connectDB(): Promise<typeof mongoose> {
   if (!global.mongooseCache.promise) {
     global.mongooseCache.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
-      dbName: 'hisaab',
+      dbName: 'churnguard',
     })
   }
   global.mongooseCache.conn = await global.mongooseCache.promise

@@ -7,10 +7,10 @@ node_modules/
 .next/
 out/
 
-# env files — copy .env.local.example → .env.local and fill in your values
+# env files — secrets live in a single gitignored .env
+.env
 .env.local
 .env.*.local
-.env
 
 # debug
 npm-debug.log*

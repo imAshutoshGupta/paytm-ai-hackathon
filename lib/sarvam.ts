@@ -46,7 +46,7 @@ export async function textToSpeech(
     {
       inputs: [text.slice(0, 2500)],
       target_language_code: languageCode,
-      speaker: 'anushka',
+      speaker: 'ritu',
       model: 'bulbul:v3',
       pace: 1.0,
       enable_preprocessing: true,

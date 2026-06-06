@@ -1,114 +1,81 @@
 /**
- * In-memory datastore seeded from mock JSON files.
+ * In-memory datastore seeded from mock/merchants.json.
  * Used when MONGODB_URI is not set (no real database needed for demo).
+ *
+ * IDs are deterministic (mock_m1, cust_m1_0, ...) so that churn results and
+ * win-back state stored in localStorage stay valid across page reloads.
  */
 
-import kiranaRaw from '../mock/kirana.json'
-import tuitionRaw from '../mock/tuition.json'
-import tailorRaw from '../mock/tailor.json'
+import raw from '../mock/merchants.json'
 
-let idSeq = 1
-function uid() { return `mock_${++idSeq}_${Math.floor(Math.random() * 9999)}` }
-function daysAgo(n: number) { return new Date(Date.now() - n * 86400000) }
+export interface MMerchant {
+  _id: string
+  phone: string
+  name: string
+  businessName: string
+  businessType: string
+}
 
-export interface MUser {
-  _id: string; phone: string; name: string; businessName: string
-  businessType: 'kirana' | 'tuition' | 'tailor'; language: 'en' | 'hi' | 'mr'
-  createdAt: Date; updatedAt: Date
-}
-export interface MUdhaar {
-  _id: string; userId: string; customerName: string; amount: number
-  amountPaid: number; note: string; status: 'pending' | 'partial' | 'paid'
-  dueDate?: Date; createdAt: Date; updatedAt: Date
-}
-export interface MBillItem { name: string; quantity: number; unit: string; price: number }
-export interface MBill {
-  _id: string; userId: string; vendorName: string; items: MBillItem[]
-  totalAmount: number; status: 'paid' | 'unpaid'; billDate: Date
-  imageUrl?: string; rawText?: string; createdAt: Date; updatedAt: Date
-}
-export interface MInventory {
-  _id: string; userId: string; itemName: string; quantity: number
-  unit: string; reorderThreshold: number; lastUpdated: Date; createdAt: Date; updatedAt: Date
-}
-export interface MTransaction {
-  _id: string; userId: string; type: 'sale' | 'expense'; amount: number
-  description: string; category: string; paymentMode: 'cash' | 'upi' | 'credit'
-  createdAt: Date; updatedAt: Date
+export interface MCustomer {
+  _id: string
+  merchantId: string
+  name: string
+  phone: string
+  transactionCount: number
+  lastTransactionAmount: number
+  averageTransactionValue: number
+  transactionDaysAgo: number[]
 }
 
 interface Store {
-  users: MUser[]
-  udhaar: MUdhaar[]
-  bills: MBill[]
-  inventory: MInventory[]
-  transactions: MTransaction[]
+  merchants: MMerchant[]
+  customers: MCustomer[]
 }
+
+type RawCustomer = {
+  name: string
+  phone: string
+  lastTransactionAmount: number
+  averageTransactionValue: number
+  transactionDaysAgo: number[]
+}
+type RawMerchant = {
+  phone: string
+  name: string
+  businessName: string
+  businessType: string
+  customers: RawCustomer[]
+}
+
+let idSeq = 1000
+function uid() { return `gen_${++idSeq}` }
 
 let store: Store | null = null
 
 function buildStore(): Store {
-  const s: Store = { users: [], udhaar: [], bills: [], inventory: [], transactions: [] }
-  const datasets = [kiranaRaw, tuitionRaw, tailorRaw]
-  const userIds = ['mock_u1', 'mock_u2', 'mock_u3']
-
-  datasets.forEach((mock, idx) => {
-    const userId = userIds[idx]
-    const u = mock.user as { phone: string; name: string; businessName: string; businessType: string; language: string }
-    s.users.push({
-      _id: userId,
-      phone: u.phone,
-      name: u.name,
-      businessName: u.businessName,
-      businessType: u.businessType as MUser['businessType'],
-      language: u.language as MUser['language'],
-      createdAt: daysAgo(60),
-      updatedAt: daysAgo(1),
+  const s: Store = { merchants: [], customers: [] }
+  ;(raw.merchants as RawMerchant[]).forEach((m, mi) => {
+    const merchantId = `mock_m${mi + 1}`
+    s.merchants.push({
+      _id: merchantId,
+      phone: m.phone,
+      name: m.name,
+      businessName: m.businessName,
+      businessType: m.businessType,
     })
-
-    type RawUdhaar = { customerName: string; amount: number; amountPaid: number; note: string; status: string; daysAgo: number }
-    ;(mock.udhaar as RawUdhaar[]).forEach((e) => {
-      s.udhaar.push({
-        _id: uid(), userId,
-        customerName: e.customerName, amount: e.amount, amountPaid: e.amountPaid,
-        note: e.note, status: e.status as MUdhaar['status'],
-        createdAt: daysAgo(e.daysAgo), updatedAt: daysAgo(e.daysAgo),
-      })
-    })
-
-    type RawBillItem = { name: string; quantity: number; unit: string; price: number }
-    type RawBill = { vendorName: string; items: RawBillItem[]; totalAmount: number; status: string; daysAgo: number }
-    ;(mock.bills as RawBill[]).forEach((b) => {
-      s.bills.push({
-        _id: uid(), userId,
-        vendorName: b.vendorName, items: b.items, totalAmount: b.totalAmount,
-        status: b.status as MBill['status'],
-        billDate: daysAgo(b.daysAgo), createdAt: daysAgo(b.daysAgo), updatedAt: daysAgo(b.daysAgo),
-      })
-    })
-
-    type RawInv = { itemName: string; quantity: number; unit: string; reorderThreshold: number }
-    ;(mock.inventory as RawInv[]).forEach((i) => {
-      s.inventory.push({
-        _id: uid(), userId,
-        itemName: i.itemName, quantity: i.quantity, unit: i.unit,
-        reorderThreshold: i.reorderThreshold,
-        lastUpdated: daysAgo(1), createdAt: daysAgo(30), updatedAt: daysAgo(1),
-      })
-    })
-
-    type RawTx = { type: string; amount: number; description: string; category: string; paymentMode: string; daysAgo: number }
-    ;(mock.transactions as RawTx[]).forEach((t) => {
-      s.transactions.push({
-        _id: uid(), userId,
-        type: t.type as MTransaction['type'], amount: t.amount,
-        description: t.description, category: t.category,
-        paymentMode: t.paymentMode as MTransaction['paymentMode'],
-        createdAt: daysAgo(t.daysAgo), updatedAt: daysAgo(t.daysAgo),
+    m.customers.forEach((c, ci) => {
+      s.customers.push({
+        _id: `cust_m${mi + 1}_${ci}`,
+        merchantId,
+        name: c.name,
+        phone: c.phone,
+        transactionCount: c.transactionDaysAgo.length,
+        lastTransactionAmount: c.lastTransactionAmount,
+        averageTransactionValue: c.averageTransactionValue,
+        transactionDaysAgo: c.transactionDaysAgo,
       })
     })
   })
-
   return s
 }
 
@@ -117,152 +84,49 @@ function getStore(): Store {
   return store
 }
 
-// ─── Users ────────────────────────────────────────────────────────────────────
+// ─── Merchants (users) ──────────────────────────────────────────────────────
 
 export const Users = {
-  findOne(query: Partial<MUser>): MUser | null {
+  findOne(query: Partial<MMerchant>): MMerchant | null {
     const s = getStore()
-    return s.users.find((u) =>
+    return s.merchants.find((u) =>
       Object.entries(query).every(([k, v]) => (u as unknown as Record<string, unknown>)[k] === v),
     ) ?? null
   },
-  findById(id: string): MUser | null {
-    return getStore().users.find((u) => u._id === id) ?? null
+  findById(id: string): MMerchant | null {
+    return getStore().merchants.find((u) => u._id === id) ?? null
   },
-  create(data: Omit<MUser, '_id' | 'createdAt' | 'updatedAt'>): MUser {
-    const u: MUser = { _id: uid(), ...data, createdAt: new Date(), updatedAt: new Date() }
-    getStore().users.push(u)
+  create(data: Omit<MMerchant, '_id'>): MMerchant {
+    const u: MMerchant = { _id: uid(), ...data }
+    getStore().merchants.push(u)
     return u
   },
-  update(id: string, patch: Partial<MUser>): MUser | null {
-    const s = getStore()
-    const idx = s.users.findIndex((u) => u._id === id)
-    if (idx === -1) return null
-    s.users[idx] = { ...s.users[idx], ...patch, updatedAt: new Date() }
-    return s.users[idx]
-  },
-  all(): MUser[] { return getStore().users },
+  all(): MMerchant[] { return getStore().merchants },
 }
 
-// ─── Udhaar ───────────────────────────────────────────────────────────────────
+// ─── Customers ──────────────────────────────────────────────────────────────
 
-export const UdhaarStore = {
-  find(userId: string, opts?: { search?: string; status?: string }): MUdhaar[] {
-    let rows = getStore().udhaar.filter((u) => u.userId === userId)
-    if (opts?.status && opts.status !== 'all') rows = rows.filter((u) => u.status === opts.status)
-    if (opts?.search) {
-      const q = opts.search.toLowerCase()
-      rows = rows.filter((u) => u.customerName.toLowerCase().includes(q))
-    }
-    return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+export const CustomerStore = {
+  findByMerchant(merchantId: string): MCustomer[] {
+    return getStore().customers.filter((c) => c.merchantId === merchantId)
   },
-  findById(id: string): MUdhaar | null {
-    return getStore().udhaar.find((u) => u._id === id) ?? null
+  count(merchantId: string): number {
+    return getStore().customers.filter((c) => c.merchantId === merchantId).length
   },
-  create(data: Omit<MUdhaar, '_id' | 'createdAt' | 'updatedAt'>): MUdhaar {
-    const row: MUdhaar = { _id: uid(), ...data, createdAt: new Date(), updatedAt: new Date() }
-    getStore().udhaar.push(row)
+  create(data: Omit<MCustomer, '_id'>): MCustomer {
+    const row: MCustomer = { _id: uid(), ...data }
+    getStore().customers.push(row)
     return row
   },
-  update(id: string, patch: Partial<MUdhaar>): MUdhaar | null {
+  replaceForMerchant(merchantId: string, rows: Omit<MCustomer, '_id' | 'merchantId'>[]): number {
     const s = getStore()
-    const idx = s.udhaar.findIndex((u) => u._id === id)
-    if (idx === -1) return null
-    s.udhaar[idx] = { ...s.udhaar[idx], ...patch, updatedAt: new Date() }
-    return s.udhaar[idx]
-  },
-  delete(id: string): void {
-    const s = getStore()
-    s.udhaar = s.udhaar.filter((u) => u._id !== id)
-  },
-}
-
-// ─── Bills ────────────────────────────────────────────────────────────────────
-
-export const BillStore = {
-  find(userId: string): MBill[] {
-    return getStore().bills
-      .filter((b) => b.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-  },
-  findById(id: string): MBill | null {
-    return getStore().bills.find((b) => b._id === id) ?? null
-  },
-  findUnpaid(userId: string): MBill[] {
-    return getStore().bills.filter((b) => b.userId === userId && b.status === 'unpaid')
-  },
-  create(data: Omit<MBill, '_id' | 'createdAt' | 'updatedAt'>): MBill {
-    const row: MBill = { _id: uid(), ...data, createdAt: new Date(), updatedAt: new Date() }
-    getStore().bills.push(row)
-    return row
-  },
-  update(id: string, patch: Partial<MBill>): MBill | null {
-    const s = getStore()
-    const idx = s.bills.findIndex((b) => b._id === id)
-    if (idx === -1) return null
-    s.bills[idx] = { ...s.bills[idx], ...patch, updatedAt: new Date() }
-    return s.bills[idx]
-  },
-  delete(id: string): void {
-    const s = getStore()
-    s.bills = s.bills.filter((b) => b._id !== id)
-  },
-}
-
-// ─── Inventory ────────────────────────────────────────────────────────────────
-
-export const InventoryStore = {
-  find(userId: string): MInventory[] {
-    return getStore().inventory
-      .filter((i) => i.userId === userId)
-      .sort((a, b) => a.itemName.localeCompare(b.itemName))
-  },
-  findById(id: string): MInventory | null {
-    return getStore().inventory.find((i) => i._id === id) ?? null
-  },
-  create(data: Omit<MInventory, '_id' | 'createdAt' | 'updatedAt'>): MInventory {
-    const row: MInventory = { _id: uid(), ...data, createdAt: new Date(), updatedAt: new Date() }
-    getStore().inventory.push(row)
-    return row
-  },
-  update(id: string, patch: Partial<MInventory>): MInventory | null {
-    const s = getStore()
-    const idx = s.inventory.findIndex((i) => i._id === id)
-    if (idx === -1) return null
-    s.inventory[idx] = { ...s.inventory[idx], ...patch, updatedAt: new Date() }
-    return s.inventory[idx]
-  },
-  delete(id: string): void {
-    const s = getStore()
-    s.inventory = s.inventory.filter((i) => i._id !== id)
-  },
-}
-
-// ─── Transactions ─────────────────────────────────────────────────────────────
-
-export const TransactionStore = {
-  find(userId: string, limit = 30): MTransaction[] {
-    return getStore().transactions
-      .filter((t) => t.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, limit)
-  },
-  create(data: Omit<MTransaction, '_id' | 'createdAt' | 'updatedAt'>): MTransaction {
-    const row: MTransaction = { _id: uid(), ...data, createdAt: new Date(), updatedAt: new Date() }
-    getStore().transactions.push(row)
-    return row
-  },
-  count(userId: string): number {
-    return getStore().transactions.filter((t) => t.userId === userId).length
+    s.customers = s.customers.filter((c) => c.merchantId !== merchantId)
+    rows.forEach((r) => s.customers.push({ _id: uid(), merchantId, ...r }))
+    return rows.length
   },
 }
 
 // ─── Seed / Clear ─────────────────────────────────────────────────────────────
 
-export function resetStore() {
-  store = buildStore()
-}
-
-export function clearStore() {
-  store = { users: [], udhaar: [], bills: [], inventory: [], transactions: [] }
-}
+export function resetStore() { store = buildStore() }
+export function clearStore() { store = { merchants: [], customers: [] } }

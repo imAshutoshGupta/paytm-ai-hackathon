@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isMockMode, connectDB } from '@/lib/mongodb'
-import { Users, UdhaarStore, BillStore, TransactionStore, resetStore, clearStore } from '@/lib/mockstore'
+import { Users, CustomerStore, resetStore, clearStore } from '@/lib/mockstore'
+import { buildSampleCustomers } from '@/lib/sampleCustomers'
+
+type RawCustomer = {
+  name: string; phone: string
+  lastTransactionAmount: number; averageTransactionValue: number
+  transactionDaysAgo: number[]
+}
+type RawMerchant = {
+  phone: string; name: string; businessName: string; businessType: string
+  customers: RawCustomer[]
+}
 
 export async function GET(req: NextRequest) {
   const action = req.nextUrl.searchParams.get('action')
@@ -16,89 +27,94 @@ export async function GET(req: NextRequest) {
 
   if (action === 'overview') {
     if (isMockMode()) {
-      const users = Users.all()
-      const overview = users.map((u) => {
-        const udhaars = UdhaarStore.find(u._id).filter((d) => d.status !== 'paid')
-        const bills = BillStore.find(u._id)
-        const txCount = TransactionStore.count(u._id)
-        return {
-          id: u._id,
-          name: u.name, phone: u.phone, businessName: u.businessName,
-          businessType: u.businessType,
-          totalDues: udhaars.reduce((s, d) => s + (d.amount - d.amountPaid), 0),
-          totalBills: bills.reduce((s, b) => s + b.totalAmount, 0),
-          transactionCount: txCount,
-          createdAt: u.createdAt,
-        }
-      })
-      return NextResponse.json({ users: overview, mockMode: true })
+      const merchants = Users.all().map((m) => ({
+        id: m._id, name: m.name, phone: m.phone,
+        businessName: m.businessName, businessType: m.businessType,
+        customerCount: CustomerStore.count(m._id),
+      }))
+      return NextResponse.json({ merchants, mockMode: true })
     }
-
     await connectDB()
-    const [User, Udhaar, Bill, Transaction] = await Promise.all([
+    const [User, Customer] = await Promise.all([
       import('@/models/User').then((m) => m.default),
-      import('@/models/Udhaar').then((m) => m.default),
-      import('@/models/Bill').then((m) => m.default),
-      import('@/models/Transaction').then((m) => m.default),
+      import('@/models/Customer').then((m) => m.default),
     ])
-    const users = await User.find({}).sort({ createdAt: -1 })
-    const overview = await Promise.all(users.map(async (u) => {
-      const [udhaars, bills, txCount] = await Promise.all([
-        Udhaar.find({ userId: u._id.toString() }),
-        Bill.find({ userId: u._id.toString() }),
-        Transaction.countDocuments({ userId: u._id.toString() }),
-      ])
-      return {
-        id: u._id.toString(), name: u.name, phone: u.phone,
-        businessName: u.businessName, businessType: u.businessType,
-        totalDues: udhaars.filter((d) => d.status !== 'paid').reduce((s, d) => s + (d.amount - d.amountPaid), 0),
-        totalBills: bills.reduce((s, b) => s + b.totalAmount, 0),
-        transactionCount: txCount, createdAt: u.createdAt,
-      }
-    }))
-    return NextResponse.json({ users: overview })
+    const merchants = await User.find({}).sort({ createdAt: -1 })
+    const overview = await Promise.all(merchants.map(async (m) => ({
+      id: m._id.toString(), name: m.name, phone: m.phone,
+      businessName: m.businessName, businessType: m.businessType,
+      customerCount: await Customer.countDocuments({ merchantId: m._id.toString() }),
+    })))
+    return NextResponse.json({ merchants: overview })
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { action } = body
+  const { action, merchantId } = await req.json()
+
+  if (action === 'populate') {
+    if (!merchantId) return NextResponse.json({ error: 'merchantId required' }, { status: 400 })
+    const sample = buildSampleCustomers(110)
+    const now = Date.now()
+
+    if (isMockMode()) {
+      const n = CustomerStore.replaceForMerchant(merchantId, sample.map((c) => ({
+        name: c.name, phone: c.phone,
+        transactionCount: c.transactionDaysAgo.length,
+        lastTransactionAmount: c.lastTransactionAmount,
+        averageTransactionValue: c.averageTransactionValue,
+        transactionDaysAgo: c.transactionDaysAgo,
+      })))
+      return NextResponse.json({ success: true, count: n, mockMode: true })
+    }
+
+    await connectDB()
+    const Customer = (await import('@/models/Customer')).default
+    await Customer.deleteMany({ merchantId })
+    for (const c of sample) {
+      const transactionDates = [...c.transactionDaysAgo].sort((a, b) => b - a).map((d) => new Date(now - d * 86400000))
+      await Customer.create({
+        merchantId, name: c.name, phone: c.phone,
+        transactionCount: c.transactionDaysAgo.length,
+        lastTransactionAmount: c.lastTransactionAmount,
+        averageTransactionValue: c.averageTransactionValue,
+        transactionDates,
+      })
+    }
+    return NextResponse.json({ success: true, count: sample.length })
+  }
 
   if (action === 'seed') {
     if (isMockMode()) {
       resetStore()
-      return NextResponse.json({ success: true, results: { '9999999001': 'seeded', '9999999002': 'seeded', '9999999003': 'seeded' }, mockMode: true })
+      return NextResponse.json({ success: true, mockMode: true })
     }
-    // Real MongoDB seed
     await connectDB()
-    const [kiranaData, tuitionData, tailorData] = await Promise.all([
-      import('@/mock/kirana.json').then((m) => m.default),
-      import('@/mock/tuition.json').then((m) => m.default),
-      import('@/mock/tailor.json').then((m) => m.default),
-    ])
-    const [User, Udhaar, Bill, Inventory, Transaction] = await Promise.all([
+    const data = (await import('@/mock/merchants.json')).default as { merchants: RawMerchant[] }
+    const [User, Customer] = await Promise.all([
       import('@/models/User').then((m) => m.default),
-      import('@/models/Udhaar').then((m) => m.default),
-      import('@/models/Bill').then((m) => m.default),
-      import('@/models/Inventory').then((m) => m.default),
-      import('@/models/Transaction').then((m) => m.default),
+      import('@/models/Customer').then((m) => m.default),
     ])
-    const results: Record<string, string> = {}
-    for (const mock of [kiranaData, tuitionData, tailorData] as Array<{ user: { phone: string; name: string; businessName: string; businessType: 'kirana'|'tuition'|'tailor'; language: 'en'|'hi'|'mr' }; udhaar: Array<{ customerName: string; amount: number; amountPaid: number; note: string; status: 'pending' | 'partial' | 'paid'; daysAgo: number }>; bills: Array<{ vendorName: string; items: Array<{ name: string; quantity: number; unit: string; price: number }>; totalAmount: number; status: 'paid' | 'unpaid'; daysAgo: number }>; inventory: Array<{ itemName: string; quantity: number; unit: string; reorderThreshold: number }>; transactions: Array<{ type: 'sale'|'expense'; amount: number; description: string; category: string; paymentMode: 'cash'|'upi'|'credit'; daysAgo: number }> }>) {
-      let user = await User.findOne({ phone: mock.user.phone })
-      if (!user) user = await User.create(mock.user)
-      const userId = user._id.toString()
-      await Promise.all([Udhaar.deleteMany({ userId }), Bill.deleteMany({ userId }), Inventory.deleteMany({ userId }), Transaction.deleteMany({ userId })])
-      const now = Date.now()
-      for (const u of mock.udhaar) await Udhaar.create({ userId, customerName: u.customerName, amount: u.amount, amountPaid: u.amountPaid, note: u.note, status: u.status as 'pending' | 'partial' | 'paid', createdAt: new Date(now - u.daysAgo * 86400000) })
-      for (const b of mock.bills) await Bill.create({ userId, vendorName: b.vendorName, items: b.items, totalAmount: b.totalAmount, status: b.status as 'paid' | 'unpaid', billDate: new Date(now - b.daysAgo * 86400000), createdAt: new Date(now - b.daysAgo * 86400000) })
-      for (const i of mock.inventory) await Inventory.create({ userId, ...i })
-      for (const t of mock.transactions) await Transaction.create({ userId, type: t.type, amount: t.amount, description: t.description, category: t.category, paymentMode: t.paymentMode, createdAt: new Date(now - t.daysAgo * 86400000) })
-      results[mock.user.phone] = 'seeded'
+    const now = Date.now()
+    for (const m of data.merchants) {
+      let merchant = await User.findOne({ phone: m.phone })
+      if (!merchant) merchant = await User.create({ phone: m.phone, name: m.name, businessName: m.businessName, businessType: m.businessType })
+      const merchantId = merchant._id.toString()
+      await Customer.deleteMany({ merchantId })
+      for (const c of m.customers) {
+        const transactionDates = [...c.transactionDaysAgo].sort((a, b) => b - a).map((d) => new Date(now - d * 86400000))
+        await Customer.create({
+          merchantId, name: c.name, phone: c.phone,
+          transactionCount: c.transactionDaysAgo.length,
+          lastTransactionAmount: c.lastTransactionAmount,
+          averageTransactionValue: c.averageTransactionValue,
+          transactionDates,
+        })
+      }
     }
-    return NextResponse.json({ success: true, results })
+    return NextResponse.json({ success: true })
   }
 
   if (action === 'clear') {
@@ -107,14 +123,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, mockMode: true })
     }
     await connectDB()
-    const [User, Udhaar, Bill, Inventory, Transaction] = await Promise.all([
+    const [User, Customer] = await Promise.all([
       import('@/models/User').then((m) => m.default),
-      import('@/models/Udhaar').then((m) => m.default),
-      import('@/models/Bill').then((m) => m.default),
-      import('@/models/Inventory').then((m) => m.default),
-      import('@/models/Transaction').then((m) => m.default),
+      import('@/models/Customer').then((m) => m.default),
     ])
-    await Promise.all([User.deleteMany({}), Udhaar.deleteMany({}), Bill.deleteMany({}), Inventory.deleteMany({}), Transaction.deleteMany({})])
+    await Promise.all([User.deleteMany({}), Customer.deleteMany({})])
     return NextResponse.json({ success: true })
   }
 

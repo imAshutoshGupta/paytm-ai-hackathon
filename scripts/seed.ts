@@ -1,93 +1,70 @@
 import * as dotenv from 'dotenv'
-dotenv.config({ path: '.env.local' })
+dotenv.config({ path: '.env' })
 
 import mongoose from 'mongoose'
 import User from '../models/User'
-import Udhaar from '../models/Udhaar'
-import Bill from '../models/Bill'
-import Inventory from '../models/Inventory'
-import Transaction from '../models/Transaction'
+import Customer from '../models/Customer'
 
-const kiranaData = require('../mock/kirana.json')
-const tuitionData = require('../mock/tuition.json')
-const tailorData = require('../mock/tailor.json')
+const data = require('../mock/merchants.json')
+
+type RawCustomer = {
+  name: string
+  phone: string
+  lastTransactionAmount: number
+  averageTransactionValue: number
+  transactionDaysAgo: number[]
+}
+type RawMerchant = {
+  phone: string
+  name: string
+  businessName: string
+  businessType: string
+  customers: RawCustomer[]
+}
 
 async function seed() {
   const uri = process.env.MONGODB_URI
   if (!uri) throw new Error('MONGODB_URI not set in .env.local')
 
-  await mongoose.connect(uri, { dbName: 'hisaab' })
+  await mongoose.connect(uri, { dbName: 'churnguard' })
   console.log('Connected to MongoDB')
 
-  const mockDatasets = [kiranaData, tuitionData, tailorData]
+  const now = Date.now()
 
-  for (const mock of mockDatasets) {
-    const userData = mock.user
-    console.log(`\nSeeding ${userData.phone} (${userData.businessType})...`)
+  for (const m of data.merchants as RawMerchant[]) {
+    console.log(`\nSeeding merchant ${m.phone} (${m.businessType})...`)
 
-    let user = await User.findOne({ phone: userData.phone })
-    if (!user) {
-      user = await User.create(userData)
-      console.log(`  ✓ Created user: ${user.name}`)
+    let merchant = await User.findOne({ phone: m.phone })
+    if (!merchant) {
+      merchant = await User.create({
+        phone: m.phone,
+        name: m.name,
+        businessName: m.businessName,
+        businessType: m.businessType,
+      })
+      console.log(`  ✓ Created merchant: ${merchant.name}`)
     } else {
-      console.log(`  ✓ User exists: ${user.name}`)
+      console.log(`  ✓ Merchant exists: ${merchant.name}`)
     }
-    const userId = user._id.toString()
 
-    await Promise.all([
-      Udhaar.deleteMany({ userId }),
-      Bill.deleteMany({ userId }),
-      Inventory.deleteMany({ userId }),
-      Transaction.deleteMany({ userId }),
-    ])
-    console.log('  ✓ Cleared old data')
+    const merchantId = merchant._id.toString()
+    await Customer.deleteMany({ merchantId })
 
-    const now = Date.now()
-
-    for (const u of mock.udhaar) {
-      await Udhaar.create({
-        userId,
-        customerName: u.customerName,
-        amount: u.amount,
-        amountPaid: u.amountPaid,
-        note: u.note,
-        status: u.status,
-        createdAt: new Date(now - u.daysAgo * 86400000),
-        updatedAt: new Date(now - u.daysAgo * 86400000),
+    for (const c of m.customers) {
+      const transactionDates = [...c.transactionDaysAgo]
+        .sort((a, b) => b - a)
+        .map((d) => new Date(now - d * 86400000))
+      await Customer.create({
+        merchantId,
+        name: c.name,
+        phone: c.phone,
+        transactionCount: c.transactionDaysAgo.length,
+        lastTransactionAmount: c.lastTransactionAmount,
+        averageTransactionValue: c.averageTransactionValue,
+        transactionDates,
       })
     }
-    console.log(`  ✓ Seeded ${mock.udhaar.length} udhaar entries`)
-
-    for (const b of mock.bills) {
-      await Bill.create({
-        userId,
-        vendorName: b.vendorName,
-        items: b.items,
-        totalAmount: b.totalAmount,
-        status: b.status,
-        billDate: new Date(now - b.daysAgo * 86400000),
-        createdAt: new Date(now - b.daysAgo * 86400000),
-      })
-    }
-    console.log(`  ✓ Seeded ${mock.bills.length} bills`)
-
-    for (const i of mock.inventory) {
-      await Inventory.create({ userId, ...i })
-    }
-    console.log(`  ✓ Seeded ${mock.inventory.length} inventory items`)
-
-    for (const tx of mock.transactions) {
-      await Transaction.create({
-        userId,
-        type: tx.type,
-        amount: tx.amount,
-        description: tx.description,
-        category: tx.category,
-        paymentMode: tx.paymentMode,
-        createdAt: new Date(now - tx.daysAgo * 86400000),
-      })
-    }
-    console.log(`  ✓ Seeded ${mock.transactions.length} transactions`)
+    console.log(`  ✓ Seeded ${m.customers.length} customers`)
   }
 
   await mongoose.disconnect()
